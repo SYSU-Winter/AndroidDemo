@@ -14,25 +14,37 @@ import java.net.URL;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+
 /**
  * Created by 12136 on 2017/3/30.
  */
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener{
     TextView text;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_layout);
-        Button sendRequest = (Button) findViewById(R.id.button);
+        Button sendWithHttpURLConnection = (Button) findViewById(R.id.sendWithHttpURLConnection);
+        Button sendWithOkHttp = (Button)findViewById(R.id.sendWithOkHttp);
         text = (TextView) findViewById(R.id.text);
-        sendRequest.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (view.getId() == R.id.button)
-                    sendRequestWithHttpURLConnection();
-            }
-        });
+        sendWithHttpURLConnection.setOnClickListener(this);
+        sendWithOkHttp.setOnClickListener(this);
+    }
+
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.sendWithHttpURLConnection:
+                sendRequestWithHttpURLConnection();
+                break;
+            case R.id.sendWithOkHttp:
+                sendRequestWithOkHttp();
+                break;
+        }
     }
 
     public void sendRequestWithHttpURLConnection() {
@@ -71,6 +83,29 @@ public class MainActivity extends AppCompatActivity {
                     if (connection != null) {
                         connection.disconnect();
                     }
+                }
+            }
+        }).start();
+    }
+
+    private void sendRequestWithOkHttp() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    // 首先创建一个OkHttp的实例
+                    OkHttpClient client = new OkHttpClient();
+                    // 创建一个Request对象，这是发起一条HTTP请求的前提
+                    Request request = new Request.Builder()
+                            .url("https://baidu.com")
+                            .build();
+                    // 调用OkHttpClient的newCall()方法来创建一个Call对象，并调用它的execute方法
+                    // 来发送请求并获取服务器返回的数据
+                    Response response = client.newCall(request).execute();
+                    String responseDate = response.body().string();
+                    showResponse(responseDate);
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         }).start();
