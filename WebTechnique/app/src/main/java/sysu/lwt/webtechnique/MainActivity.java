@@ -2,10 +2,15 @@ package sysu.lwt.webtechnique;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import org.xml.sax.ContentHandler;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
@@ -15,11 +20,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.net.ssl.HttpsURLConnection;
+import javax.xml.parsers.SAXParserFactory;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -59,14 +66,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         new Thread(new Runnable() {
             @Override
             public void run() {
-                HttpsURLConnection connection = null;
+                // 由于使用的xml网址是http而不是https，所以使用HttpURLConnection而不是HttpsURLConnection
+                HttpURLConnection connection = null;
                 BufferedReader reader = null;
                 try {
                     URL url = new URL("http://ws.webxml.com.cn/WebServices/WeatherWS.asmx/getWeather?theCityCode=广州&theUserID=");
-                    connection = (HttpsURLConnection) url.openConnection();
+                    connection = (HttpURLConnection) url.openConnection();
                     connection.setRequestMethod("GET");
                     connection.setConnectTimeout(8000);
                     connection.setReadTimeout(8000);
+
+                    int x = connection.getResponseCode(); //状态码为200表示连接成功
+                    Log.d("state","The response is: "+ x);
 
                     InputStream in = connection.getInputStream();
                     // 对获取的输入流进行读取
@@ -77,6 +88,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         builder.append(line);
                     }
                     //showResponse(builder.toString());
+                    //Log.v("builder.toString()", builder.toString());
                     parseXMLWithPull(builder.toString());
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -112,7 +124,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     Response response = client.newCall(request).execute();
                     String responseDate = response.body().string();
                     //showResponse(responseDate);
-                    parseXMLWithPull(responseDate);
+                    //parseXMLWithPull(responseDate);
+                    parseXMLWithSAX(responseDate);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -120,7 +133,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }).start();
     }
 
-    private void showResponse(final List<String> list) {
+    public void showResponse(final List<String> list) {
         // 将线程切回主线程，更新UI
         runOnUiThread(new Runnable() {
             @Override
@@ -170,6 +183,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } catch (XmlPullParserException e) {
             e.printStackTrace();
         } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void parseXMLWithSAX(String xmlData) {
+        try {
+            SAXParserFactory factory = SAXParserFactory.newInstance();
+            XMLReader reader = factory.newSAXParser().getXMLReader();
+            ContentHandler contentHandler = new ConTentHandler();
+            reader.setContentHandler(contentHandler);
+            reader.parse(new InputSource(new StringReader(xmlData)));
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
