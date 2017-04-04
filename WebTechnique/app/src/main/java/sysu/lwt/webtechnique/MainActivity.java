@@ -28,6 +28,7 @@ import java.util.List;
 import javax.net.ssl.HttpsURLConnection;
 import javax.xml.parsers.SAXParserFactory;
 
+import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -38,100 +39,57 @@ import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
     TextView text;
+    private String url = "http://ws.webxml.com.cn/WebServices/WeatherWS.asmx/getWeather?theCityCode=广州&theUserID=";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_layout);
+        Button Clear = (Button) findViewById(R.id.clear);
         Button sendWithHttpURLConnection = (Button) findViewById(R.id.sendWithHttpURLConnection);
         Button sendWithOkHttp = (Button)findViewById(R.id.sendWithOkHttp);
         text = (TextView) findViewById(R.id.text);
         sendWithHttpURLConnection.setOnClickListener(this);
         sendWithOkHttp.setOnClickListener(this);
+        Clear.setOnClickListener(this);
     }
 
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.sendWithHttpURLConnection:
-                sendRequestWithHttpURLConnection();
+                HttpUtil.sendRequestWithHttpURLConnection(url, new HttpCallBackListener() {
+                    @Override
+                    public void onFinish(String response) {
+                        parseXMLWithPull(response);
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        e.printStackTrace();
+                    }
+                });
                 break;
             case R.id.sendWithOkHttp:
-                sendRequestWithOkHttp();
+                HttpUtil.sendRequestWithOkHttp(url, new okhttp3.Callback() {
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException{
+                        String responseData = response.body().string();
+                        parseXMLWithPull(responseData);
+                    }
+
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+                break;
+            case R.id.clear:
+                text.setText("Clear!");
                 break;
         }
     }
 
-    public void sendRequestWithHttpURLConnection() {
-        // 开启线程
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                // 由于使用的xml网址是http而不是https，所以使用HttpURLConnection而不是HttpsURLConnection
-                HttpURLConnection connection = null;
-                BufferedReader reader = null;
-                try {
-                    URL url = new URL("http://ws.webxml.com.cn/WebServices/WeatherWS.asmx/getWeather?theCityCode=广州&theUserID=");
-                    connection = (HttpURLConnection) url.openConnection();
-                    connection.setRequestMethod("GET");
-                    connection.setConnectTimeout(8000);
-                    connection.setReadTimeout(8000);
 
-                    int x = connection.getResponseCode(); //状态码为200表示连接成功
-                    Log.d("state","The response is: "+ x);
-
-                    InputStream in = connection.getInputStream();
-                    // 对获取的输入流进行读取
-                    reader = new BufferedReader(new InputStreamReader(in));
-                    StringBuilder builder = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        builder.append(line);
-                    }
-                    //showResponse(builder.toString());
-                    //Log.v("builder.toString()", builder.toString());
-                    parseXMLWithPull(builder.toString());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    if (reader != null) {
-                        try {
-                            reader.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    if (connection != null) {
-                        connection.disconnect();
-                    }
-                }
-            }
-        }).start();
-    }
-
-    private void sendRequestWithOkHttp() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    // 首先创建一个OkHttp的实例
-                    OkHttpClient client = new OkHttpClient();
-                    // 创建一个Request对象，这是发起一条HTTP请求的前提
-                    Request request = new Request.Builder()
-                            .url("http://ws.webxml.com.cn/WebServices/WeatherWS.asmx/getWeather?theCityCode=广州&theUserID=")
-                            .build();
-                    // 调用OkHttpClient的newCall()方法来创建一个Call对象，并调用它的execute方法
-                    // 来发送请求并获取服务器返回的数据
-                    Response response = client.newCall(request).execute();
-                    String responseDate = response.body().string();
-                    //showResponse(responseDate);
-                    //parseXMLWithPull(responseDate);
-                    parseXMLWithSAX(responseDate);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
-    }
 
     public void showResponse(final List<String> list) {
         // 将线程切回主线程，更新UI
@@ -197,5 +155,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void parseJSONWithJSONObject(String jsonData) {
+
     }
 }
