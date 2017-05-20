@@ -1,6 +1,7 @@
 package sysu.lwt.volley;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -29,7 +30,6 @@ import org.json.JSONObject;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.jar.Manifest;
 
 /**
  * Created by 12136 on 2017/5/16.
@@ -42,6 +42,8 @@ public class MainActivity extends Activity {
     private Button bt_imageRequest;
     private Button bt_imageLoader;
     private Button bt_networkImageView;
+
+    private Button bt_customRequest;
 
     private TextView result;
 
@@ -260,6 +262,14 @@ public class MainActivity extends Activity {
             }
 
         });
+
+        bt_customRequest.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, CustomActivity.class);
+                startActivity(intent);
+            }
+        });
     }
 
     private String appendParameter(String url, Map<String,String> params) {
@@ -278,6 +288,8 @@ public class MainActivity extends Activity {
         bt_imageRequest = (Button) findViewById(R.id.bt_imageRequest);
         bt_imageLoader = (Button) findViewById(R.id.bt_imageLoader);
         bt_networkImageView = (Button) findViewById(R.id.bt_networkImageView);
+
+        bt_customRequest = (Button) findViewById(R.id.bt_customRequest);
 
         result = (TextView) findViewById(R.id.showString);
 
